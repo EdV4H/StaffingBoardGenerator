@@ -3,6 +3,19 @@ from tkinter import ttk, filedialog
 from PIL import Image, ImageTk, ImageFont, ImageDraw
 import os
 
+def add_text_to_image(img, text, font_path, font_size, font_color, height, width, max_length=740):
+    position = (width, height)
+    font = ImageFont.truetype(font_path, font_size)
+    draw = ImageDraw.Draw(img)
+    if draw.textsize(text, font=font)[0] > max_length:
+        while draw.textsize(text + '…', font=font)[0] > max_length:
+            text = text[:-1]
+        text = text + '…'
+
+    draw.text(position, text, font_color, font=font)
+
+    return img
+
 class Preference (ttk.Frame):
     def __init__(self, master=None):
         super().__init__(master=master)
@@ -11,7 +24,7 @@ class Preference (ttk.Frame):
         self.string_photo.set("")
 
         self.string_name1 = tk.StringVar()
-        self.string_name1.trace("w", lambda name, index, mode, string_name1=string_name1: set_name1(string_name1))
+        self.string_name1.trace("w", lambda name, index, mode, string_name1=self.string_name1: self.set_name1(name=self.string_name1))
 
         label_photo = ttk.Label(self, text="Photo")
         entry_photo = ttk.Entry(self, textvariable=self.string_photo)
@@ -52,12 +65,13 @@ class Preference (ttk.Frame):
         file = tk.filedialog.askopenfilename(filetypes = fTyp, initialdir = iDir)
         self.string_photo.set(file)
 
-    def set_name1 (name):
-        Preview.set_name1(name)
+    def set_name1 (self,name="noname"):
+        Preview.set_name1(name=name)
 
 
 
 class Preview (ttk.Frame):
+    name1 = "noname"
     def __init__(self, master=None):
         super().__init__(master=master)
 
@@ -66,42 +80,31 @@ class Preview (ttk.Frame):
         self.template = Image.open("template.png").copy()
         self.name1 = "noname"
 
-        self.reflect_image()
+        self.img = ImageTk.PhotoImage(self.template)
 
-        label_tmp = ttk.Label(self, image=self.img)
+        self.label_tmp = ttk.Label(self, image=self.img)
+
+        button_reflect = ttk.Button(self, text="reflect", command=self.reflect_image)
 
         self.grid_columnconfigure((0), weight=1)
-        self.grid_rowconfigure((0,1), weight=1)
+        self.grid_rowconfigure((0,1,2), weight=1)
 
         label_title.grid(row=0, column=0)
-        label_tmp.grid(row=1, column=0, sticky=tk.N)
+        self.label_tmp.grid(row=1, column=0, sticky=tk.N)
+        button_reflect.grid(row=2, column=0, sticky=tk.E)
 
     def reflect_image (self):
         base_img = Image.open("template.png").copy()
-        text = "text"
-        font_path = "meryo.ttc"
-        font_size = 10
-        font_color = (0,0,0)
-        height = 200
-        width = 10
-        production = self.add_text_to_image(img=base_img,text=text,font_path=font_path,font_size=font_size,font_color=font_color,height=height,width=width,max_length=210)
-        self.img = ImageTk.PhotoImage(production)
+        added_img = add_text_to_image(base_img, self.name1, "meiryo.ttc", 10, (0,0,0), 10, 10)
+        self.img = ImageTk.PhotoImage(added_img) 
+        self.label_tmp.grid_forget()
+        self.label_tmp = ttk.Label(self, image=self.img)
+        self.label_tmp.grid(row=1, column=0, sticky=tk.N)
 
-    def add_text_to_image (img, text, font_path, font_size, font_color, height, width, max_length=210):
-        position = (width, height)
-        font = ImageFont.truetype(font_path, font_size)
-        draw = ImageDraw.Draw(img)
-        if draw.textsize(text, font=font)[0] > max_length:
-            while draw.textsize(text + '.', font=font)[0] > max_length:
-                text = text[:-1]
-            text = text + '.'
-
-        draw.text(position, text, font_color, font=font)
-        return img
-
-    @staticmethod
-    def set_name1 (name):
-        self.name1 = name
+    @classmethod
+    def set_name1 (cls,name):
+        name1 = name.get()
+        print (name1)
 
 
 if __name__ == "__main__":
