@@ -19,6 +19,10 @@ class Application (ttk.Frame):
         self.var_name_roman.set("noname")
         self.var_name.set("NONAME")
 
+        self.var_name_roman.trace("w", self.change_entry)
+        self.var_name.trace("w", self.change_entry)
+        self.var_buddy.trace("w", self.change_entry)
+
         self.grid_columnconfigure((0,1), weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -51,10 +55,10 @@ class Application (ttk.Frame):
         img_base = self.generate_image()
         self.img = ImageTk.PhotoImage(img_base)
         self.imageview_preview = ttk.Label(frame_preview, image=self.img)
-        self.imageview_preview.bind("<Button-1>", self.reflect_image)
+        #self.imageview_preview.bind("<Button-1>", self.reflect_image)
 
-        frame_preview.grid(row=0, column=0)
-        frame_property.grid(row=0, column=1)
+        frame_preview.grid(row=0, column=0, padx=30)
+        frame_property.grid(row=0, column=1, padx=30)
         
         label_preview_title.grid(row=0, column=0)
         self.imageview_preview.grid(row=1, column=0)
@@ -67,8 +71,8 @@ class Application (ttk.Frame):
         entry_name.grid(row=4, column=0, columnspan=3, sticky=tk.W+tk.E)
         label_buddy.grid(row=5, column=0, columnspan=3, sticky=tk.W)
         entry_buddy.grid(row=6, column=0, columnspan=3, sticky=tk.W+tk.E)
-        button_load.grid(row=7, column=0)
-        button_save.grid(row=7, column=1)
+        button_load.grid(row=7, column=0, pady=15)
+        button_save.grid(row=7, column=1, padx=5)
         button_output.grid(row=7, column=2)
 
     def load_image (self):
@@ -76,7 +80,6 @@ class Application (ttk.Frame):
         iDir = os.path.abspath(os.path.dirname(__file__))
         self.file = tk.filedialog.askopenfilename(filetypes = fTyp, initialdir = iDir)
         self.trimming(file=self.file)
-
 
     def trimming (self, file):
         window_trimming = Toplevel(master = self.master)
@@ -110,14 +113,14 @@ class Application (ttk.Frame):
         canvas_crop.bind("<Button-1>", self.target)
 
         button_reset = ttk.Button(frame_tool, text="reset", command=self.reset_crop)
-        button_rotate = ttk.Button(frame_tool, text="rotate")
-        button_crop = ttk.Button(frame_tool, text="Crop", command=self.crop_image)
+        button_info = ttk.Button(frame_tool, text="info", command=self.show_info)
+        button_crop = ttk.Button(frame_tool, text="crop", command=self.crop_image)
 
         frame_tool.grid(row=0, column=0, sticky=tk.N)
         canvas_crop.grid(row=0, column=1)
 
         button_reset.grid(row=0, column=0)
-        button_rotate.grid(row=1, column=0)
+        button_info.grid(row=1, column=0)
         button_crop.grid(row=2, column=0)
 
     def target (self, event):
@@ -129,13 +132,31 @@ class Application (ttk.Frame):
             self.crop_h = self.crop_y - event.y
             print (str(self.crop_h))
 
+    def change_entry (self, *args):
+        self.reflect_image()
+
     def load_data (self):
+        fTyp = [("","*.sbd")]
+        iDir = os.path.abspath(os.path.dirname(__file__))
+        data_file = tk.filedialog.askopenfilename(filetypes = fTyp, initialdir = iDir)
+        with open(data_file, mode="r") as f:
+            self.file = f.readline()
+            self.var_name_roman.set(f.readline().rstrip("\r\n"))
+            self.var_name.set(f.readline().rstrip("\r\n"))
+            self.var_buddy.set(f.readline().rstrip("\r\n"))
+            self.crop_x = int(f.readline().rstrip("\r\n"))
+            self.crop_y = int(f.readline().rstrip("\r\n"))
+            self.crop_h = int(f.readline().rstrip("\r\n"))
         print ("load_data")
 
     def save_data (self):
+        data_list = [self.file, self.var_name_roman.get(), self.var_name.get(), self.var_buddy.get(), str(self.crop_x), str(self.crop_y), str(self.crop_h)]
+        with open("data/" + self.var_name_roman.get() + ".sbd", mode="w") as f:
+            f.write('\n'.join(data_list))
         print ("save_data")
 
     def output_image (self):
+        self.generate_image().save("output/" + self.var_name_roman.get() + ".png")
         print ("output_image")
 
     def reset_crop (self):
@@ -145,9 +166,20 @@ class Application (ttk.Frame):
         print ("reset_crop")
 
     def crop_image (self):
+        self.reflect_image()
         print ("crop_image")
 
-    def reflect_image (self, event):
+    def show_info (self):
+        window_info = Toplevel(master=self.master)
+        window_info.focus_set()
+
+        label_msg = ttk.Label(window_info, text="information.")
+        button_ok = ttk.Button(window_info, text="OK")
+
+        label_msg.pack()
+        button_ok.pack()
+
+    def reflect_image (self):
         img_base = self.generate_image()
         self.img = ImageTk.PhotoImage(img_base)
         self.imageview_preview.configure(image=self.img)
